@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Uber Trip Analysis Prediction System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: brightness(0.55) saturate(1.3);
+    }
+    .bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.45) 0%,
+        rgba(0,0,10,0.35) 50%,
+        rgba(0,0,0,0.65) 100%
+      );
+    }
+
+    .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+    header {
+      padding: 18px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .logo {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, #f5c518, #ff6f00);
+      display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+      box-shadow: 0 4px 20px rgba(245,197,24,0.4);
+    }
+    .header-title h1 { font-size: 1.2rem; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
+    .header-title p  { font-size: 0.73rem; color: #f5c518; margin-top: 3px; opacity: 0.9; }
+    .header-right { display: flex; gap: 10px; }
+    .hbadge {
+      padding: 6px 14px; border-radius: 20px; font-size: 0.74rem; font-weight: 600;
+      backdrop-filter: blur(8px);
+    }
+    .hbadge-green { background: rgba(0,200,82,0.2); border: 1px solid rgba(0,200,82,0.5); color: #00e676; }
+    .hbadge-blue  { background: rgba(0,180,255,0.2); border: 1px solid rgba(0,180,255,0.4); color: #40c4ff; }
+
+    .content {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 36px 20px;
+    }
+
+    .glass-card {
+      width: 100%; max-width: 940px;
+      background: rgba(5,5,20,0.55);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    .card-top {
+      padding: 24px 32px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: linear-gradient(135deg, rgba(245,197,24,0.08), rgba(255,111,0,0.05));
+    }
+    .card-top h2 { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .card-top p  { font-size: 0.76rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+    .metrics {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .metric {
+      padding: 16px 18px; text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.07);
+    }
+    .metric:last-child { border-right: none; }
+    .metric .num { font-size: 1.5rem; font-weight: 800; color: #f5c518; line-height: 1; }
+    .metric .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .form-body { padding: 24px 32px 28px; }
+
+    .section-label {
+      font-size: 0.67rem; font-weight: 700; color: #f5c518;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      margin-bottom: 11px; margin-top: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label:first-child { margin-top: 0; }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, rgba(245,197,24,0.3), transparent);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .grid-5 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 12px; }
+
+    .field label {
+      font-size: 0.71rem; color: rgba(255,255,255,0.5);
+      margin-bottom: 5px; display: block; font-weight: 500;
+    }
+    .field input, .field select {
+      width: 100%; padding: 9px 12px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 9px; color: #fff;
+      font-size: 0.87rem; font-family: inherit;
+      outline: none; transition: all 0.2s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f5c518' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 11px center;
+      padding-right: 32px;
+      background-color: rgba(255,255,255,0.07);
+    }
+    .field select option { background: #0d0d1f; color: #fff; }
+    .field input:focus, .field select:focus {
+      border-color: rgba(245,197,24,0.6);
+      background: rgba(245,197,24,0.08);
+      box-shadow: 0 0 0 3px rgba(245,197,24,0.1);
+    }
+    .field input::placeholder { color: rgba(255,255,255,0.25); }
+
+    /* auto-filled fields look slightly different */
+    .field input[readonly] {
+      background: rgba(245,197,24,0.05);
+      border-color: rgba(245,197,24,0.2);
+      color: rgba(255,255,255,0.7);
+      cursor: not-allowed;
+    }
+
+    .auto-tag {
+      font-size: 0.6rem; color: #f5c518; margin-left: 5px;
+      background: rgba(245,197,24,0.15); padding: 1px 6px; border-radius: 8px;
+    }
+
+    .btn-predict {
+      margin-top: 22px; width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #f5c518, #ff6f00);
+      color: #000; font-size: 1rem; font-weight: 800;
+      border: none; border-radius: 11px; cursor: pointer;
+      font-family: inherit; letter-spacing: 0.3px;
+      transition: all 0.2s;
+      box-shadow: 0 6px 24px rgba(245,197,24,0.35);
+    }
+    .btn-predict:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 32px rgba(245,197,24,0.5);
+    }
+    .btn-predict:active { transform: scale(0.99); }
+
+    #result {
+      display: none; margin-top: 18px;
+      background: rgba(245,197,24,0.06);
+      border: 1px solid rgba(245,197,24,0.2);
+      border-radius: 14px; padding: 20px 22px;
+    }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .result-box {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 11px; padding: 16px 18px;
+    }
+    .result-box .r-label { font-size: 0.68rem; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.5px; }
+    .result-box .r-value { font-size: 1.9rem; font-weight: 800; color: #f5c518; margin-top: 6px; }
+
+    .badge {
+      display: inline-block; padding: 5px 16px;
+      border-radius: 20px; font-size: 0.88rem; font-weight: 700; margin-top: 6px;
+    }
+    .badge-high   { background: rgba(255,77,77,0.15);  color: #ff6b6b; border: 1px solid rgba(255,77,77,0.4); }
+    .badge-medium { background: rgba(255,165,0,0.15);  color: #ffb347; border: 1px solid rgba(255,165,0,0.4); }
+    .badge-low    { background: rgba(0,200,82,0.15);   color: #00e676; border: 1px solid rgba(0,200,82,0.4);  }
+
+    .future-note {
+      font-size: 0.71rem; color: #f5c518; margin-top: 10px;
+      text-align: center; opacity: 0; transition: opacity 0.3s;
+    }
+    .future-note.show { opacity: 1; }
+    .error-msg { color: #ff6b6b; font-size: 0.84rem; margin-top: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-left">
+        <div class="logo">🚖</div>
+        <div class="header-title">
+          <h1>Uber Trip Analysis Prediction System</h1>
+          <p>Hyderabad Region · Trained on 2022–2025 · Predicts Future Trips</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="hbadge hbadge-green">🟢 Model Active</div>
+        <div class="hbadge hbadge-blue">40,023 Trips Trained</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="glass-card">
+
+        <div class="card-top">
+          <h2>🔮 Predict Future Fare & Demand</h2>
+          <p>Select pickup & dropoff, then fill in date, time, surge, and weather details to predict.</p>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="num">0.9968</div>
+            <div class="lbl">Fare R²</div>
+          </div>
+          <div class="metric">
+            <div class="num">99.75%</div>
+            <div class="lbl">Demand Accuracy</div>
+          </div>
+          <div class="metric">
+            <div class="num">3.5 yrs</div>
+            <div class="lbl">Training Data</div>
+          </div>
+          <div class="metric">
+            <div class="num">RF</div>
+            <div class="lbl">Random Forest</div>
+          </div>
+        </div>
+
+        <div class="form-body">
+
+          <!-- ROUTE -->
+          <div class="section-label">📍 Route</div>
+          <div class="grid-2">
+            <div class="field">
+              <label>Pickup Location</label>
+              <select id="pickup_location" onchange="onLocationChange()">
+                {% for loc in classes.pickup_locations %}
+                <option value="{{ loc }}">{{ loc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Dropoff Location</label>
+              <select id="dropoff_location" onchange="onLocationChange()">
+                {% for loc in classes.dropoff_locations %}
+                <option value="{{ loc }}">{{ loc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Distance (km) <span class="auto-tag">auto</span></label>
+              <input type="number" id="distance" readonly placeholder="auto-filled" />
+            </div>
+            <div class="field">
+              <label>Duration (min) <span class="auto-tag">auto</span></label>
+              <input type="number" id="duration" readonly placeholder="auto-filled" />
+            </div>
+          </div>
+
+          <!-- DATE & TIME -->
+          <div class="section-label">🗓 Date & Time</div>
+          <div class="grid-5">
+            <div class="field">
+              <label>Year</label>
+              <input type="number" id="year" min="2020" max="2099" placeholder="e.g. 2025" />
+            </div>
+            <div class="field">
+              <label>Month</label>
+              <input type="number" id="month" min="1" max="12" placeholder="1 – 12" />
+            </div>
+            <div class="field">
+              <label>Day</label>
+              <input type="number" id="day" min="1" max="31" placeholder="1 – 31" />
+            </div>
+            <div class="field">
+              <label>Hour</label>
+              <input type="number" id="hour" min="0" max="23" placeholder="0 – 23" />
+            </div>
+            <div class="field">
+              <label>Weekday</label>
+              <input type="number" id="weekday" min="0" max="6" placeholder="0=Mon…6=Sun" />
+            </div>
+          </div>
+
+          <!-- CONDITIONS -->
+          <div class="section-label">🌤 Conditions</div>
+          <div class="grid-3">
+            <div class="field">
+              <label>Weather Condition ✋ <span style="color:rgba(255,255,255,0.4);font-size:0.65rem;">manual</span></label>
+              <select id="weather_condition">
+                {% for w in classes.weather_conditions %}
+                <option value="{{ w }}">{{ w }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Surge Multiplier</label>
+              <input type="number" id="surge" step="0.1" min="1.0" max="2.8" placeholder="e.g. 1.0 – 2.8" />
+            </div>
+            <div class="field">
+              <label>Driver Utilization (%) <span class="auto-tag">auto</span></label>
+              <input type="number" id="util" readonly placeholder="auto-filled" />
+            </div>
+          </div>
+
+          <button class="btn-predict" onclick="predict()">⚡ Predict Fare & Demand</button>
+
+          <div id="result">
+            <div class="result-grid">
+              <div class="result-box">
+                <div class="r-label">💰 Estimated Fare</div>
+                <div class="r-value" id="fare_out">—</div>
+              </div>
+              <div class="result-box">
+                <div class="r-label">📈 Trip Demand Level</div>
+                <div id="demand_out" style="margin-top:6px;">—</div>
+              </div>
+            </div>
+            <div class="future-note" id="future_note">⏳ Future trip prediction based on historical Hyderabad patterns</div>
+          </div>
+
+          <div id="error" class="error-msg"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function onLocationChange() {
+      const pickup  = document.getElementById("pickup_location").value;
+      const dropoff = document.getElementById("dropoff_location").value;
+
+      document.getElementById("error").textContent = "";
+      document.getElementById("result").style.display = "none";
+
+      if (!pickup || !dropoff) return;
+
+      if (pickup === dropoff) {
+        document.getElementById("error").textContent = "⚠️ Pickup and dropoff cannot be the same location!";
+        clearFields();
+        return;
+      }
+
+      const res  = await fetch("/route-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pickup_location: pickup, dropoff_location: dropoff })
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("error").textContent = "⚠️ " + data.error;
+        return;
+      }
+
+      // Auto-fill route fields only
+      document.getElementById("distance").value = data.distance;
+      document.getElementById("duration").value = data.duration;
+      document.getElementById("util").value     = data.util;
+    }
+
+    function clearFields() {
+      ["distance","duration","util"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+    }
+
+    async function predict() {
+      document.getElementById("error").textContent = "";
+      document.getElementById("result").style.display = "none";
+
+      const pickup  = document.getElementById("pickup_location").value;
+      const dropoff = document.getElementById("dropoff_location").value;
+
+      if (pickup === dropoff) {
+        document.getElementById("error").textContent = "⚠️ Pickup and dropoff cannot be the same location!";
+        return;
+      }
+
+      const year     = parseFloat(document.getElementById("year").value);
+      const month    = parseFloat(document.getElementById("month").value);
+      const day      = parseFloat(document.getElementById("day").value);
+      const hour     = parseFloat(document.getElementById("hour").value);
+      const weekday  = parseFloat(document.getElementById("weekday").value);
+      const distance = parseFloat(document.getElementById("distance").value);
+      const duration = parseFloat(document.getElementById("duration").value);
+      const surge    = parseFloat(document.getElementById("surge").value);
+      const util     = parseFloat(document.getElementById("util").value);
+      const weather  = document.getElementById("weather_condition").value;
+
+      if ([year,month,day,hour,weekday,distance,duration,surge,util].some(isNaN)) {
+        document.getElementById("error").textContent = "⚠️ Please fill in all fields before predicting.";
+        return;
+      }
+
+      const res = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year, month, day, hour, weekday,
+          trip_distance_km:          distance,
+          trip_duration_min:         duration,
+          surge_multiplier:          surge,
+          driver_utilization_percent: util,
+          pickup_location:           pickup,
+          dropoff_location:          dropoff,
+          weather_condition:         weather
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("error").textContent = "❌ " + data.error;
+        return;
+      }
+
+      document.getElementById("fare_out").textContent = "₹ " + data.fare.toLocaleString('en-IN');
+      const d    = data.demand.toLowerCase();
+      const cls  = d === "high" ? "badge-high" : d === "low" ? "badge-low" : "badge-medium";
+      const icon = d === "high" ? "🔴" : d === "low" ? "🟢" : "🟡";
+      document.getElementById("demand_out").innerHTML = `<span class="badge ${cls}">${icon} ${data.demand}</span>`;
+
+      const note = document.getElementById("future_note");
+      if (year > 2025) note.classList.add("show");
+      else note.classList.remove("show");
+
+      document.getElementById("result").style.display = "block";
+    }
+  </script>
+
+</body>
+</html>
